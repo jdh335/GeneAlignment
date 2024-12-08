@@ -39,13 +39,13 @@ float align(string s1, string s2, bool banded, int align_length){
   }
 
   for (int d = 0; d < rows + cols - 1; ++d) {
-    #pragma omp parallel for schedule(dynamic, 4)
+    #pragma omp parallel for
     for (int i = max(0, d - cols + 1); i <= min(d, rows - 1); ++i) {
       int j = d - i;
 
       float left = (i==0) ? INF : align_matrix[i-1][j].score + INDEL;
       float top = (j==0) ? INF : align_matrix[i][j-1].score + INDEL;
-      float diagonal = (i==0||j==0) ? INF : (seq1[i]==seq2[j]) ? align_matrix[i-1][j-1].score + MATCH : align_matrix[i-1][j-1].score + SUB;
+      float diagonal = (i==0||j==0) ? INF : ((seq1[i]==seq2[j]) ?  MATCH : SUB) + align_matrix[i-1][j-1].score;
 
       align_data best;
       best.score = INF;
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
     for (int j = 0; j < 8; j++) {
       if (j >= i) {
         auto result = align(seq[i], seq[j], false, 10000);
-        printf("Result: %f\n", result);
+        // printf("Result: %f\n", result);
       }
     }
   }

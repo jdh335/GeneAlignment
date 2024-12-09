@@ -1,0 +1,14 @@
+Max threads: 1
+[Compute] Elapsed time: 386296.259 ms
+Max threads: 2
+[Compute] Elapsed time: 208082.006 ms
+Max threads: 4
+[Compute] Elapsed time: 113055.463 ms
+Max threads: 8
+[Compute] Elapsed time: 70824.829 ms
+Max threads: 12
+[Compute] Elapsed time: 79154.615 ms
+Max threads: 16
+[Compute] Elapsed time: 72728.103 ms
+Max threads: 20
+[Compute] Elapsed time: 116432.579 ms

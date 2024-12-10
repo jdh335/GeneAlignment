@@ -26,7 +26,7 @@ struct align_data {
 __global__ void align_kernel(char* seq1, char* seq2, align_data* align_matrix, int rows, int cols, int d, float INF) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = d - i;
-
+    
     if (i < rows && j < cols && j >= 0) {
         float left = (i == 0) ? INF : align_matrix[(i - 1) * cols + j].score + INDEL;
         float top = (j == 0) ? INF : align_matrix[i * cols + (j - 1)].score + INDEL;
@@ -53,34 +53,37 @@ float align(string s1, string s2, bool banded, int align_length) {
     int rows = seq2.length();
     int cols = seq1.length();
 
-    align_data* align_matrix = new align_data[rows * cols];
+    align_data* align_matrix;
+    cudaMallocManaged(&align_matrix, rows * cols * sizeof(align_data));
 
     char* d_seq1;
     char* d_seq2;
-    align_data* d_align_matrix;
 
-    cudaMalloc(&d_seq1, seq1.length() * sizeof(char));
-    cudaMalloc(&d_seq2, seq2.length() * sizeof(char));
-    cudaMalloc(&d_align_matrix, rows * cols * sizeof(align_data));
+    //managed memory added
+    cudaMallocManaged(&d_seq1, seq1.length() * sizeof(char));
+    cudaMallocManaged(&d_seq2, seq2.length() * sizeof(char));
 
-    cudaMemcpy(d_seq1, seq1.c_str(), seq1.length() * sizeof(char), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_seq2, seq2.c_str(), seq2.length() * sizeof(char), cudaMemcpyHostToDevice);
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+    // asyn added
+    cudaMemcpyAsync(d_seq1, seq1.c_str(), seq1.length() * sizeof(char), cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(d_seq2, seq2.c_str(), seq2.length() * sizeof(char), cudaMemcpyHostToDevice, stream);
 
     dim3 threadsPerBlock(16);
     for (int d = 0; d < rows + cols - 1; ++d) {
         int numElements = min(d + 1, min(rows, cols));
         dim3 numBlocks((numElements + threadsPerBlock.x - 1) / threadsPerBlock.x);
-        align_kernel<<<numBlocks, threadsPerBlock>>>(d_seq1, d_seq2, d_align_matrix, rows, cols, d, INF);
+        align_kernel<<<numBlocks, threadsPerBlock, 0, stream>>>(d_seq1, d_seq2, align_matrix, rows, cols, d, INF);
     }
 
-    cudaMemcpy(align_matrix, d_align_matrix, rows * cols * sizeof(align_data), cudaMemcpyDeviceToHost);
+    cudaStreamSynchronize(stream);
+    cudaStreamDestroy(stream);
 
     align_data result = align_matrix[(rows - 1) * cols + (cols - 1)];
 
     cudaFree(d_seq1);
     cudaFree(d_seq2);
-    cudaFree(d_align_matrix);
-    delete[] align_matrix;
+    cudaFree(align_matrix);
 
     return result.score;
 }
@@ -92,12 +95,11 @@ int main(int argc, char* argv[]) {
                           "Mouse_Hepatitis", "Murine_Hepatitis1", "Murine_Hepatitis2", "Murine_Hepatitis3"};
 
     for (int i = 0; i < 8; i++) {
-        ifstream file("./sequences/" + filename[i] + ".txt");
+        ifstream file("../sequences/" + filename[i] + ".txt");
         while (getline(file, line)) seq[i] += line;
     }
 
     htkTime_start(Compute, "Doing the computation");
-
 
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
@@ -108,8 +110,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-     htkTime_stop(Compute, "Doing the computation");
-
+    htkTime_stop(Compute, "Doing the computation");
 
     return 0;
 }

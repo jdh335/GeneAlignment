@@ -91,8 +91,8 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < 8; i++) {
     for (int j = 0; j < 8; j++) {
       if (j >= i) {
-        auto result = align(seq[i], seq[j], false, 10000);
-        // printf("Result: %f\n", result);
+        auto result = align(seq[i], seq[j], false, 15000);
+        printf("Result: %f\n", result);
       }
     }
   }

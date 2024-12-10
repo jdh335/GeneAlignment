@@ -16,13 +16,16 @@ OPT += -fopenmp
 LDFLAGS += -fopenmp
 
 .PHONY: cuda
-cuda: all 
+cuda: all
 	$(MAKE) -C ./CUDA run
 
-.PHONY: omp
-omp: all
+.PHONY: run
+run: all
+	rm -f run_log_omp.txt
 	for t in 1 2 {4..20..4}; do \
 	  { echo "Max threads: $$t"; \
 	  OMP_NUM_THREADS=$$t ./solution;} \
+		| tee -a run_log_omp.txt; \
 	done
+	make cuda
 	

@@ -15,5 +15,6 @@ HTK_DIR = ../../libhtk
 
 .PHONY: run
 run: all 
-	  ./solution \
-	done
+	# rm -f run_log_cuda.txt \
+	./solution \
+	| tee -a run_log_cuda.txt;
